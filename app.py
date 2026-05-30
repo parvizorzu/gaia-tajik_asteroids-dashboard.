@@ -46,7 +46,7 @@ def get_con() -> duckdb.DuckDBPyConnection:
     if not DB_PATH.exists():
         with st.spinner("🔭 Инициализация базы данных — запуск ETL-пайплайна…"):
             from data_loader import run_etl
-            run_etl(use_real_data=True)
+            run_etl(use_real_data=False)  # TAP недоступен в облаке; локально замени на True
     from ddl import get_connection
     return get_connection(DB_PATH)
 
@@ -122,14 +122,17 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("### Параметры отображения")
     show_errorbars = st.checkbox("Показать планки погрешностей фотометрии", value=False)
+    # Ключи = точные имена колонок в v_phase_space.
+    # ВАЖНО: "i_deg" — наклонение в вью; "inclination" — только в sso_source (вылет!).
+    _COLOR_OPTS: dict[str, str] = {
+        "orbit_class":    "Класс орбиты",
+        "g_mag_abs_mean": "Абс. звёздная величина (H)",
+        "i_deg":          "Наклонение (°)",
+    }
     color_by = st.selectbox(
         "Цвет фазового пространства",
-        ["orbit_class", "g_mag_abs_mean", "inclination"],
-        format_func=lambda x: {
-            "orbit_class": "Класс орбиты",
-            "g_mag_abs_mean": "Абс. звёздная величина (H)",
-            "inclination": "Наклонение (°)",
-        }[x],
+        options=list(_COLOR_OPTS.keys()),
+        format_func=lambda x: _COLOR_OPTS[x],
     )
 
     st.markdown("---")
@@ -247,7 +250,6 @@ with tab_phase:
                 "i_deg":         "Наклонение (°)",
                 "g_mag_abs_mean":"Абс. звёздная величина H",
                 "orbit_class":   "Класс орбиты",
-                "inclination":   "Наклонение (°)",
                 "tj":            "Параметр Тиссерана T_J",
                 "e":             "Эксцентриситет",
             },
@@ -277,7 +279,8 @@ with tab_phase:
             xaxis=dict(gridcolor="#21262d", title="Большая полуось (а.е.)", range=[1.8, 4.2]),
             yaxis=dict(gridcolor="#21262d", title="Наклонение (°)"),
             legend=dict(bgcolor=CARD_BG, bordercolor="#30363d"),
-            height=500, margin=dict(l=50, r=20, t=20, b=50),
+            autosize=True, height=460,
+            margin=dict(l=40, r=15, t=15, b=45),
         )
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Пунктирные линии — резонансные люки Кирквуда (3:1, 5:2, 7:3, 2:1)")
@@ -291,7 +294,7 @@ with tab_phase:
         )
         fig_belt.update_layout(
             paper_bgcolor=DARK_BG, font_color="#e6edf3",
-            height=280, margin=dict(l=0, r=0, t=10, b=0),
+            autosize=True, height=260, margin=dict(l=0, r=0, t=10, b=0),
             showlegend=True, legend=dict(font_size=11),
         )
         st.plotly_chart(fig_belt, use_container_width=True)
@@ -307,7 +310,8 @@ with tab_phase:
         fig_ei.update_traces(marker_size=8)
         fig_ei.update_layout(
             paper_bgcolor=DARK_BG, plot_bgcolor=DARK_BG, font_color="#e6edf3",
-            height=250, xaxis=dict(gridcolor="#21262d"),
+            autosize=True, height=240,
+            xaxis=dict(gridcolor="#21262d"),
             yaxis=dict(gridcolor="#21262d"),
             margin=dict(l=40, r=10, t=10, b=40),
         )
@@ -352,7 +356,7 @@ with tab_detail:
                 angularaxis=dict(gridcolor="#21262d", tickfont_color="#e6edf3"),
             ),
             paper_bgcolor=DARK_BG, font_color="#e6edf3",
-            height=380, margin=dict(l=60, r=60, t=40, b=40),
+            autosize=True, height=360, margin=dict(l=50, r=50, t=30, b=30),
         )
 
         col_r, col_tbl = st.columns([1, 1])
@@ -406,7 +410,7 @@ with tab_detail:
             paper_bgcolor=DARK_BG, plot_bgcolor=DARK_BG, font_color="#e6edf3",
             xaxis=dict(gridcolor="#21262d"),
             yaxis=dict(gridcolor="#21262d"),
-            height=320, margin=dict(l=40, r=20, t=20, b=40),
+            autosize=True, height=300, margin=dict(l=40, r=20, t=20, b=40),
         )
         st.plotly_chart(fig_comp, use_container_width=True)
     else:
@@ -447,9 +451,10 @@ with tab_photom:
             fig_lc.update_yaxes(autorange="reversed")
             fig_lc.update_layout(
                 paper_bgcolor=DARK_BG, plot_bgcolor=DARK_BG, font_color="#e6edf3",
-                height=350, xaxis=dict(gridcolor="#21262d"),
+                autosize=True, height=330,
+                xaxis=dict(gridcolor="#21262d"),
                 yaxis=dict(gridcolor="#21262d", title="G (маг, ярче ↑)"),
-                margin=dict(l=50, r=10, t=20, b=50),
+                margin=dict(l=45, r=10, t=15, b=45),
             )
             st.plotly_chart(fig_lc, use_container_width=True)
 
@@ -506,7 +511,7 @@ with tab_photom:
         ))
         fig_dist.update_layout(
             paper_bgcolor=DARK_BG, plot_bgcolor=DARK_BG, font_color="#e6edf3",
-            height=280,
+            autosize=True, height=260,
             xaxis=dict(gridcolor="#21262d", title="Дата"),
             yaxis=dict(gridcolor="#21262d", title="r_гел (а.е.)"),
             yaxis2=dict(overlaying="y", side="right", title="Фазовый угол (°)",
@@ -549,7 +554,7 @@ with tab_sky:
             )
         fig_sky.update_layout(
             paper_bgcolor=DARK_BG, plot_bgcolor=DARK_BG, font_color="#e6edf3",
-            height=480,
+            autosize=True, height=440,
             xaxis=dict(gridcolor="#21262d", range=[0, 360],
                        title="Прямое восхождение (°)"),
             yaxis=dict(gridcolor="#21262d", range=[-90, 90],
